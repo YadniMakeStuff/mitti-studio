@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mitti Studio - Custom Pottery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4ebdd;--ink:#3a281c;--card:rgba(255,252,246,.8);--accent:#9a5b34;--line:rgba(120,80,45,.28);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{touch-action:pan-y pinch-zoom;-webkit-user-select:none;user-select:none;margin:0;background:linear-gradient(180deg,#f8f1e5 0%,#efe2cf 45%,#e0c9aa 100%);color:var(--ink);font-family:'DM Sans',sans-serif;font-weight:400}
+canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+#rays{position:fixed;inset:0;z-index:0;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.6),transparent 58%)}
+#prog{position:fixed;top:0;left:0;height:2px;width:0;background:var(--accent);z-index:9}
+section{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;padding:40px 6vw}
+section:nth-of-type(even){justify-content:flex-end}
+.card{width:min(460px,100%);background:var(--card);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--line);border-radius:24px;box-shadow:0 20px 60px rgba(90,55,25,.18);padding:36px;display:flex;flex-direction:column;gap:16px;opacity:0;transform:translateY(24px);transition:opacity .9s ease,transform .9s ease}
+.card.in{opacity:1;transform:none}
+h1,h2{font-family:'Cormorant Garamond',serif;font-weight:500;margin:0;line-height:1.02;letter-spacing:-.5px}
+h1{font-size:clamp(46px,9vw,78px)}
+h2{font-size:clamp(32px,6vw,46px)}
+p{margin:0;line-height:1.65;font-size:15px;font-weight:300}
+.tag{font-size:11px;letter-spacing:3px;font-weight:500;color:var(--accent);text-transform:uppercase}
+.script{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;color:var(--accent);line-height:1.2}
+.kiln{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:500;color:var(--accent)}
+.kl{display:flex;align-items:center;gap:8px}
+.pr{color:var(--ink)}
+.sum{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:4px 0}
+.sum .hint{opacity:.8}
+.price{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:600;color:var(--accent);white-space:nowrap;line-height:1}
+.hint{font-size:12px;opacity:.65;font-weight:300}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.sw{width:34px;height:34px;border-radius:50%;border:2px solid transparent;outline:1px solid var(--line);cursor:pointer;padding:0}
+.sw.on{border-color:var(--bg);outline:2px solid var(--accent)}
+.chip{font:inherit;font-size:13px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:8px 15px;cursor:pointer;transition:background .2s}
+.chip.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:400}
+input[type=range]{width:100%;accent-color:var(--accent)}
+button.btn{font:inherit;font-weight:500;font-size:14px;border:1px solid var(--accent);border-radius:999px;padding:13px 24px;cursor:pointer;background:var(--accent);color:var(--bg)}
+button.alt{background:transparent;color:var(--ink)}
+.panel{display:flex;flex-direction:column;gap:12px}
+#msg{font-size:13px;min-height:20px;font-weight:300}
+#label{position:fixed;top:calc(env(safe-area-inset-top,0px) + 68px);left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:999px;padding:7px 20px;font-size:11px;font-weight:500;letter-spacing:3px;text-transform:uppercase}
+#intro{position:fixed;inset:0;z-index:10;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .8s}
+#intro.done{opacity:0;pointer-events:none}
+#introTitle{animation:fadeUp .8s both;text-align:center}
+#kiln{width:min(300px,70vw);height:auto;animation:fadeUp .8s .2s both}
+#ipot{animation:potIn 1.5s .9s both ease-in-out}
+#door{animation:doorClose .6s 2.5s both ease-in}
+#glow{animation:glow 1.3s 3.1s both}
+#fire{font-size:12px;letter-spacing:4px;font-weight:500;color:var(--accent);animation:fadeUp .5s 3.1s both}
+#skip{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);font:inherit;font-size:12px;background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:8px 18px;cursor:pointer;opacity:.7}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes potIn{0%{transform:translate(-40px,198px);opacity:1}80%{transform:translate(140px,198px) scale(1);opacity:1}100%{transform:translate(140px,198px) scale(.5);opacity:0}}
+@keyframes doorClose{from{transform:translateY(-90px)}to{transform:translateY(0)}}
+@keyframes glow{0%{opacity:0}30%{opacity:.6}55%{opacity:.25}80%{opacity:.65}100%{opacity:.4}}
+@media (prefers-reduced-motion:reduce){#intro *{animation-duration:.01s!important;animation-delay:0s!important}.card{opacity:1;transform:none;transition:none}}
+#saveFx{position:fixed;inset:0;z-index:9;background:rgba(244,235,221,.88);color:var(--ink);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:fadeUp .4s}
+#saveFx svg{width:min(240px,60vw);height:auto}
+#saveFx #ipot{animation:potIn 1.2s .1s both ease-in-out}
+#saveFx #door{animation:doorClose .6s 1.5s both ease-in}
+#saveFx #glow{animation:glow 1.3s 2.1s both}
+#saveFx .fx{font-size:12px;letter-spacing:4px;font-weight:500;color:var(--accent)}
+#bar{position:fixed;top:0;left:0;right:0;z-index:7;display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 10px) 5vw 10px;background:rgba(250,243,231,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.brand{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;letter-spacing:.5px}
+.icons{display:flex;gap:6px}
+.icons button{position:relative;background:transparent;border:0;color:var(--ink);padding:8px;cursor:pointer;display:flex}
+#cartCount{position:absolute;top:0;right:0;min-width:17px;height:17px;border-radius:9px;background:var(--accent);color:#fff8ee;font-size:10px;font-weight:500;display:none;align-items:center;justify-content:center;padding:0 4px}
+#menu{position:fixed;top:calc(env(safe-area-inset-top,0px) + 62px);right:5vw;z-index:8;background:#fbf6ec;border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 50px rgba(90,55,25,.18);padding:8px;display:flex;flex-direction:column;min-width:180px;opacity:0;transform:translateY(-8px);pointer-events:none;transition:opacity .25s,transform .25s}
+#menu.open{opacity:1;transform:none;pointer-events:auto}
+#menu button{font:inherit;font-size:15px;text-align:left;background:transparent;border:0;color:var(--ink);padding:12px 16px;border-radius:12px;cursor:pointer}
+#menu button:hover{background:rgba(154,91,52,.1)}
+#scrim{position:fixed;inset:0;z-index:11;background:rgba(58,40,28,.35);opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim.on{opacity:1;pointer-events:auto}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(380px,92vw);z-index:12;background:#fbf6ec;border-left:1px solid var(--line);padding:calc(env(safe-area-inset-top,0px) + 22px) 22px calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;flex-direction:column;gap:14px;overflow-y:auto;transform:translateX(100%);transition:transform .35s ease}
+#drawer.open{transform:none}
+.dh{display:flex;justify-content:space-between;align-items:center}
+#cartClose{font-size:30px;line-height:1;background:transparent;border:0;color:var(--ink);cursor:pointer}
+#cartEmpty{opacity:.7}
+.ci{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
+.cit{font-size:13px;line-height:1.5;font-weight:300}
+.cip{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--accent)}
+.cix{background:transparent;border:0;font-size:20px;color:var(--ink);cursor:pointer;line-height:1}
+#cartFoot{display:none;flex-direction:column;gap:12px}
+.tot{display:flex;justify-content:space-between;font-size:18px;font-weight:500}
+#ckmsg{font-size:12px;white-space:pre-wrap;font-weight:300;opacity:.8}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 80px);transform:translateX(-50%) translateY(10px);z-index:13;background:var(--ink);color:#fff8ee;border-radius:999px;padding:10px 20px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s}
+#toast.on{opacity:1;transform:translateX(-50%)}
+.sumr{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+button.sm{padding:9px 18px;font-size:13px;white-space:nowrap}
+#design .card{position:fixed;left:3vw;right:3vw;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);width:auto;max-width:900px;margin:0 auto;max-height:44vh;overflow-y:auto;overscroll-behavior:contain;z-index:6;opacity:0;transform:translateY(48px);pointer-events:none;background:rgba(255,252,246,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:opacity .55s ease,transform .65s cubic-bezier(.2,.8,.2,1)}
+#design .card.dock{opacity:1;transform:none;pointer-events:auto}
+.panel{animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#order .card{opacity:1;transform:translateY(24px) scale(.96);clip-path:inset(0 -40px 100% -40px);transition:clip-path 1.1s cubic-bezier(.2,.8,.2,1),transform 1.1s cubic-bezier(.2,.8,.2,1)}
+#order .card.in{transform:none;clip-path:inset(0 -40px -60px -40px)}
+#order .card>*{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+#order .card.in>*{opacity:1;transform:none;transition-delay:calc(.4s + var(--i,0) * .09s)}
+#order .card::before{content:'';position:absolute;top:0;left:24px;height:3px;width:0;background:var(--accent);border-radius:3px;transition:width 1.2s .5s ease}
+#order .card.in::before{width:calc(100% - 48px)}
+@media (prefers-reduced-motion:reduce){#order .card,#order .card>*{clip-path:none!important;transition:none!important;opacity:1!important;transform:none!important}}
+body.dock #rot,body.dock #toast{bottom:calc(env(safe-area-inset-bottom,0px) + 44vh + 24px)}
+body.dock #tip{bottom:calc(env(safe-area-inset-bottom,0px) + 44vh + 74px)}
+#drag{position:fixed;inset:0;z-index:3;display:none;touch-action:none;cursor:grab}
+#rot{position:fixed;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:4;font:inherit;font-weight:500;font-size:13px;border:1px solid var(--line);background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:var(--ink);border-radius:999px;padding:10px 20px;cursor:pointer}
+#tip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 70px);z-index:4;display:none;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 16px;font-size:13px}
+@media (max-width:700px),(max-aspect-ratio:4/5){section,section:nth-of-type(even){justify-content:center;align-items:flex-end}.card{padding:24px}}
+</style>
+</head>
+<body>
+<div id="rays"></div>
+<div id="prog"></div>
+<header id="bar">
+<div class="brand">Mitti Studio</div>
+<div class="icons">
+<button id="cartBtn" aria-label="Cart"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h13l-1.5 8.5a2 2 0 0 1-2 1.5H9a2 2 0 0 1-2-1.6L5.2 4H3"/><circle cx="9.5" cy="20" r="1"/><circle cx="16.5" cy="20" r="1"/></svg><span id="cartCount">0</span></button>
+<button id="menuBtn" aria-label="Menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 8h16M4 16h16"/></svg></button>
+</div>
+</header>
+<nav id="menu">
+<button id="mHome">Home</button>
+<button id="mCollection">Collection</button>
+<button id="mDesign">Design yours</button>
+<button id="mOrder">Order</button>
+</nav>
+<div id="scrim"></div>
+<aside id="drawer">
+<div class="dh"><h2>Your cart</h2><button id="cartClose" aria-label="Close">&times;</button></div>
+<p id="cartEmpty">Your cart is empty. Design a piece and add it here.</p>
+<div id="cartList"></div>
+<div id="cartFoot">
+<div class="tot"><span>Total</span><span id="cartTotal"></span></div>
+<button class="btn" id="checkout">Checkout on WhatsApp</button>
+<div id="ckmsg"></div>
+</div>
+</aside>
+<div id="toast"></div>
+<div id="intro">
+<h1 id="introTitle">Mitti Studio</h1>
+<svg id="kiln" viewBox="0 0 280 210" aria-hidden="true">
+<defs><clipPath id="arch"><path d="M100 200 V135 A40 40 0 0 1 180 135 V200 Z"/></clipPath></defs>
+<path d="M30 200 V120 A110 110 0 0 1 250 120 V200 Z" fill="#b86a43" stroke="#8a4a2a" stroke-width="4"/>
+<path d="M100 200 V135 A40 40 0 0 1 180 135 V200 Z" fill="#2a1308"/>
+<rect id="glow" x="100" y="95" width="80" height="105" clip-path="url(#arch)" fill="#ff7a2f" opacity="0"/>
+<g clip-path="url(#arch)"><g id="door"><path d="M100 200 V135 A40 40 0 0 1 180 135 V200 Z" fill="#6b3a22"/><circle cx="140" cy="155" r="5" fill="#e9c9a0"/></g></g>
+<rect x="20" y="198" width="240" height="6" rx="3" fill="#8a4a2a"/>
+<g id="ipot"><path d="M-16 0 C-28 -16 -24 -36 -10 -42 L10 -42 C24 -36 28 -16 16 0 Z" fill="#c0643a"/></g>
+</svg>
+<div id="fire">FIRING...</div>
+<button id="skip">Skip</button>
+</div>
+<canvas id="c"></canvas>
+<div id="label">Pot</div>
+<div id="drag"></div>
+<button id="rot">Rotate</button>
+<div id="tip">Drag to rotate, pinch or scroll to zoom</div>
+
+<section>
+<div class="card">
+<div class="tag">Handmade on the wheel</div>
+<h1>Mitti Studio</h1>
+<div class="script">Fine clay, fired to last</div>
+<p>Pots, dishes, vases and cups, thrown by hand and made just the way you like them.</p>
+<div class="kiln" id="heroKiln"></div>
+<div class="row"><button class="btn" id="goDesign">Design yours</button><button class="btn alt" id="goBrowse">Browse the collection</button></div>
+</div>
+</section>
+
+<section id="design">
+<div class="card">
+<div class="tag">Made just for you</div>
+<h2>Make it yours</h2>
+<div class="sum"><div class="hint" id="size"></div><div class="sumr"><div class="price" id="price"></div><button class="btn sm" id="add2">Add to cart</button></div></div>
+<div class="row"><button class="chip tab on" id="tab1">Shape</button><button class="chip tab" id="tab2">Pattern</button></div>
+<div class="panel" id="p1">
+<div class="hint">Type</div><div class="row" id="shapes"></div>
+<div class="hint">Style</div><div class="row" id="variants"></div>
+<div class="panel" id="hwrap"><div class="hint">Handles</div><div class="row" id="hcount"></div><div class="hint" id="hsh">Handle style</div><div class="row" id="hstyle"></div></div>
+<div class="hint">Clay color</div><div class="row" id="swatches"></div>
+<label>Height <input type="range" id="hm" min="0.7" max="1.4" step="0.05"></label>
+<label>Width <input type="range" id="wm" min="0.7" max="1.4" step="0.05"></label>
+<label>Opening <input type="range" id="om" min="0.6" max="1.5" step="0.05"></label>
+</div>
+<div class="panel" id="p2" style="display:none">
+<div class="hint">Design</div><div class="row" id="arts"></div>
+<div class="hint">Design color</div><div class="row" id="artcolors"></div>
+<label>Design size <input type="range" id="as" min="0.6" max="1.6" step="0.1"></label>
+<div class="hint">Finish</div><div class="row" id="finish"></div>
+</div>
+</div>
+</section>
+
+<section id="order">
+<div class="card">
+<div class="tag">Order today</div>
+<h2>Send us your order</h2>
+<p>Save your design for next time, or add it to your cart and check out on WhatsApp.</p>
+<div class="hint" id="sum2"></div>
+<div class="price" id="price2"></div>
+<div class="row">
+<button class="btn alt" id="save">Save design</button>
+<button class="btn" id="addBtn">Add to cart</button>
+</div>
+<div id="msg"></div>
+</div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const PHONE = '919561101349'; // change to the shop's WhatsApp number (country code + number)
+const COLORS = [['Terracotta','#b5532a'],['Ivory','#e9dfcf'],['Midnight','#1f3a5f'],['Sage green','#7c9473'],['Charcoal','#3a3a3c'],['Gold','#c9a24a'],['Burgundy','#6e1f2e'],['Emerald','#1f5a4a']];
+const sstp = (a, b, x) => { const t = Math.min(Math.max((x - a) / (b - a), 0), 1); return t * t * (3 - 2 * t); };
+function Rof(t, w, b) {
+  const tp = 0.30 + 0.20 * Math.min(Math.max((b - 0.6) / 1, 0), 1), tn = 0.78, rf = 0.36, rn = 0.34;
+  let r;
+  if (t < tp) r = rf + (1 - rf) * Math.pow(Math.sin(Math.PI / 2 * t / tp), 0.85);
+  else if (t < tn) r = rn + (1 - rn) * Math.pow(Math.cos(Math.PI / 2 * (t - tp) / (tn - tp)), 1.1);
+  else r = rn;
+  r -= 0.06 * Math.pow(Math.max(0, 1 - t / 0.06), 2);
+  r += 0.34 * Math.pow(sstp(0.84, 1, t), 1.7) + 0.05 * sstp(0.95, 0.995, t);
+  const bm = (c, wd, a) => a * Math.exp(-Math.pow((t - c) / wd, 2));
+  r += bm(0.83, 0.012, 0.03) + bm(tn + 0.02, 0.008, 0.015);
+  return Math.max(r, 0.05) * w;
+}
+const SHAPES = [
+  {name:'Pot', temp:'1,050', variants:[
+    {name:'Round', h:1.6, r:t=>0.9*(0.45+0.55*Math.sin(Math.PI*t))},
+    {name:'Tall', h:2.2, r:t=>0.62*(0.4+0.6*Math.sin(Math.PI*Math.pow(t,0.9)))*(1-0.4*Math.pow(t,3))},
+    {name:'Squat', h:1.1, r:t=>1.15*(0.5+0.5*Math.sin(Math.PI*t))}]},
+  {name:'Dish', temp:'1,100', lines:['Smooth, wide and easy to clean.','Glazed inside for everyday serving.'], variants:[
+    {name:'Shallow', h:0.3, r:t=>0.6+0.6*Math.pow(t,0.8)},
+    {name:'Deep', h:0.8, r:t=>0.3+0.9*Math.sin(Math.PI*0.5*t)}]},
+  {name:'Vase', temp:'1,100', lines:['A flared lip, a slim neck and a full shoulder, lovely with flowers or on its own.','Hand-thrown rings, glazed smooth and made to hold fresh stems.'], variants:[
+    {name:'Classic', h:1.9, r:t=>Rof(t, 0.9, 1)},
+    {name:'Slim', h:2.2, r:t=>Rof(t, 0.62, 0.75)},
+    {name:'Wide', h:1.45, r:t=>Rof(t, 1.1, 1.35)}]},
+  {name:'Cooking pot', temp:'1,250', lines:['Fired at a higher heat for extra strength.','Thick walls hold warmth for slow cooking.'], variants:[
+    {name:'Standard', h:1.0, r:t=>0.8+0.2*Math.sin(Math.PI*t)},
+    {name:'Tall', h:1.3, r:t=>0.75*(0.9+0.1*Math.sin(Math.PI*t))},
+    {name:'Wide', h:0.7, r:t=>1.2*(0.85+0.15*Math.sin(Math.PI*t))}]},
+  {name:'Cup', temp:'1,150', lines:['Light in the hand and fired until it rings.','Comfortable for tea and coffee.'], variants:[
+    {name:'Normal', h:0.9, r:t=>0.33+0.22*t},
+    {name:'Cylinder', h:0.9, r:t=>0.42},
+    {name:'Fat', h:0.8, r:t=>0.7*(0.75+0.25*Math.sin(Math.PI*t))}]}
+];
+const HDEF = [0, 0, 0, 2, 1], HCAP = [true, false, false, true, true];
+const HSIZE = [0.26, 0, 0, 0.2, 0.22], HY = [0.55, 0, 0, 0.75, 0.5], HOFF = [0.55, 0.45, 1.0];
+const HST = ['Loop', 'Tall loop', 'Bar'], HCN = ['No handle', 'One handle', 'Two handles'];
+const HGEO = [() => new THREE.TorusGeometry(1, 0.28, 12, 24), () => new THREE.TorusGeometry(1, 0.28, 12, 24).scale(0.7, 1.5, 1), () => new THREE.CylinderGeometry(0.28, 0.28, 2.2, 12).rotateZ(Math.PI / 2)];
+const state = {color:'#b5532a', colorName:'Terracotta', hm:1, wm:1, om:1, shape:0, variant:0, art:'none', artColor:'#e9dfcf', artSize:1, hn:-1, hs:0, finish:'satin'};
+try { const s = localStorage.getItem('mittiDesign2'); if (s) Object.assign(state, JSON.parse(s)); } catch (e) {}
+if (!SHAPES[state.shape] || !SHAPES[state.shape].variants[state.variant]) { state.shape = 0; state.variant = 0; }
+if (state.hn < 0 || state.hn > 2) state.hn = HDEF[state.shape];
+if (!(state.hs >= 0 && state.hs <= 2)) state.hs = 0;
+if (!['matte', 'satin', 'glazed'].includes(state.finish)) state.finish = 'satin';
+
+const el = id => document.getElementById(id);
+
+const FLAME = '<svg width="14" height="18" viewBox="0 0 14 18" fill="currentColor" aria-hidden="true"><path d="M7 0C8 5 13 7 13 12a6 6 0 0 1-12 0C1 9 3 8 4 5c1 2 2 2 3-5Z"/></svg>';
+const BASE = [600, 450, 520, 750, 400];
+function priceOf(t, v, hm, wm, hn, art) {
+  let x = BASE[t] * (0.85 + 0.3 * ((hm + wm) / 2 - 0.7) / 0.7);
+  if (v > 0) x += 40;
+  if (HCAP[t]) x += 30 * (hn - HDEF[t]);
+  if (art !== 'none') x += 80;
+  return Math.min(1000, Math.max(300, Math.round(x / 10) * 10));
+}
+const rupee = n => '\u20B9' + n.toLocaleString('en-IN');
+const fromPrice = t => priceOf(t, 0, 0.7, 0.7, HDEF[t], 'none');
+const kilnRow = (label, t, pr) => '<div class="kiln"><span class="kl">' + FLAME + label + ' ' + t + ' &deg;C</span><span class="pr">From ' + rupee(pr) + '</span></div>';
+el('heroKiln').innerHTML = '<span class="kl">' + FLAME + 'Fired up to 1,250 &deg;C</span><span class="pr">From ' + rupee(Math.min(...SHAPES.map((_, i) => fromPrice(i)))) + '</span>';
+// one scroll section per extra shape (inserted before the design section)
+SHAPES.slice(1).forEach((s, i) => {
+  const sec = document.createElement('section'); if (i === 0) sec.id = 'collection';
+  sec.innerHTML = '<div class="card"><div class="tag">From our workshop</div><h2>' + s.name + '</h2>' + kilnRow('Fired at', s.temp, fromPrice(SHAPES.indexOf(s))) + '<p>' + s.lines[0] + '</p><p>' + s.lines[1] + '</p></div>';
+  el('design').before(sec);
+});
+
+COLORS.forEach(([name, hex]) => {
+  const b = document.createElement('button');
+  b.className = 'sw'; b.style.background = hex; b.title = name; b.setAttribute('aria-label', name);
+  b.onclick = () => { state.color = hex; state.colorName = name; update(); };
+  el('swatches').appendChild(b);
+});
+SHAPES.forEach((s, i) => {
+  const b = document.createElement('button');
+  b.className = 'chip'; b.textContent = s.name;
+  b.onclick = () => { state.shape = i; state.variant = 0; state.hn = HDEF[i]; state.hs = 0; update(); };
+  el('shapes').appendChild(b);
+});
+
+const renderer = new THREE.WebGLRenderer({canvas: el('c'), antialias: true, alpha: true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+camera.position.set(0, 1.4, 6.5); camera.lookAt(0, 0, 0);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a6a50, 0.5));
+const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(3, 4, 5); scene.add(sun);
+{
+  const ec = document.createElement('canvas'); ec.width = 512; ec.height = 256;
+  const ex = ec.getContext('2d'), eg = ex.createLinearGradient(0, 0, 0, 256);
+  eg.addColorStop(0, '#e9dcc8'); eg.addColorStop(0.5, '#cdb79a'); eg.addColorStop(1, '#6e5440');
+  ex.fillStyle = eg; ex.fillRect(0, 0, 512, 256);
+  ex.fillStyle = 'rgba(255,255,255,.8)'; ex.fillRect(60, 50, 90, 60); ex.fillRect(300, 40, 120, 70);
+  const et = new THREE.CanvasTexture(ec); et.mapping = THREE.EquirectangularReflectionMapping;
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromEquirectangular(et).texture;
+  et.dispose(); pm.dispose();
+}
+
+const group = new THREE.Group(); scene.add(group);
+const mat = new THREE.MeshPhysicalMaterial({color: state.color, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.06, side: THREE.DoubleSide});
+function makeBump() {
+  const W = 256, H = 1024, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'), img = x.createImageData(W, H), d = img.data;
+  for (let j = 0; j < H; j++) {
+    const v = j / H, ring = Math.sin(v * Math.PI * 2 * 46) * 4 + Math.sin(v * Math.PI * 2 * 17 + 1.3) * 2;
+    for (let i = 0; i < W; i++) {
+      const u = i / W, wob = Math.sin(u * Math.PI * 2 * 3 + v * 30) * 7, nz = (Math.random() - 0.5) * 4;
+      const val = Math.min(255, Math.max(0, 128 + ring + wob * 0.6 + nz));
+      const k = (j * W + i) * 4; d[k] = d[k + 1] = d[k + 2] = val; d[k + 3] = 255;
+    }
+  }
+  x.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
+  return t;
+}
+mat.bumpMap = makeBump(); mat.bumpScale = 0.1;
+const hMat = new THREE.MeshPhysicalMaterial({color: state.color, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.06});
+const body = new THREE.Mesh(new THREE.BufferGeometry(), mat); group.add(body);
+const handleA = new THREE.Mesh(HGEO[0](), hMat), handleB = new THREE.Mesh(HGEO[0](), hMat);
+let geoStyle = 0;
+function setHandleStyle(k) { if (k === geoStyle) return; geoStyle = k; [handleA, handleB].forEach(m => { m.geometry.dispose(); m.geometry = HGEO[k](); }); }
+group.add(handleA, handleB);
+let lastH = 1.6, lastExt = 2;
+const wheel = new THREE.Group(); group.add(wheel);
+const wMetal = new THREE.MeshStandardMaterial({color: 0x4a3426, roughness: 0.6});
+const wTeal = new THREE.MeshStandardMaterial({color: 0x6b4a34, roughness: 0.5});
+const wBrass = new THREE.MeshStandardMaterial({color: 0xc9a96a, roughness: 0.35, metalness: 0.3});
+const wHead = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.1, 48), wMetal);
+const wRim = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.04, 8, 48).rotateX(Math.PI / 2), wBrass);
+const wStem = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 1.0, 24), wTeal);
+const wBase = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.2, 32), wTeal);
+wheel.add(wHead, wRim, wStem, wBase);
+for (let i = 0; i < 4; i++) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.05, 0.12), wBrass), a = i * Math.PI / 2;
+  m.position.set(Math.cos(a) * 1.2, 0.075, Math.sin(a) * 1.2); wHead.add(m);
+}
+const shc = document.createElement('canvas'); shc.width = shc.height = 128;
+const shg = shc.getContext('2d'), grd = shg.createRadialGradient(64, 64, 0, 64, 64, 64);
+grd.addColorStop(0, 'rgba(60,35,15,.45)'); grd.addColorStop(1, 'rgba(60,35,15,0)');
+shg.fillStyle = grd; shg.fillRect(0, 0, 128, 128);
+const shadow = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 4.2).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({map: new THREE.CanvasTexture(shc), transparent: true, depthWrite: false}));
+group.add(shadow);
+
+const FN = 36, fPos = new Float32Array(FN * 3), fCol = new Float32Array(FN * 3), fData = [];
+for (let i = 0; i < FN; i++) fData.push({a: Math.random() * 6.283, r: 1.0 + Math.random() * 0.7, y: Math.random(), sp: 0.8 + Math.random() * 1.2});
+const fGeo = new THREE.BufferGeometry();
+fGeo.setAttribute('position', new THREE.BufferAttribute(fPos, 3));
+fGeo.setAttribute('color', new THREE.BufferAttribute(fCol, 3));
+const fcv = document.createElement('canvas'); fcv.width = fcv.height = 64;
+const fcx = fcv.getContext('2d'), fgr = fcx.createRadialGradient(32, 32, 0, 32, 32, 32);
+fgr.addColorStop(0, 'rgba(255,255,255,1)'); fgr.addColorStop(0.4, 'rgba(255,255,255,.5)'); fgr.addColorStop(1, 'rgba(255,255,255,0)');
+fcx.fillStyle = fgr; fcx.fillRect(0, 0, 64, 64);
+const fMat = new THREE.PointsMaterial({size: 0.1, map: new THREE.CanvasTexture(fcv), vertexColors: true, transparent: true, opacity: 0, depthWrite: false});
+const fire = new THREE.Points(fGeo, fMat); fire.visible = false; fire.frustumCulled = false; group.add(fire);
+let fireT0 = -1, curWY = 0;
+function stepFire(now) {
+  if (fireT0 < 0) return;
+  const t = (now - fireT0) / 1000;
+  const k = t < 0.5 ? t / 0.5 : t < 2.6 ? 1 : Math.max(0, 1 - (t - 2.6) / 0.8);
+  fMat.opacity = k; fire.visible = k > 0.01;
+  for (let i = 0; i < FN; i++) {
+    const d = fData[i], f = d.y;
+    d.y += 0.016 * d.sp; if (d.y > 1) d.y = 0;
+    const r = d.r * (1 - 0.3 * f), a = d.a + f * 2 + Math.sin(now * 0.004 + i) * 0.1;
+    fPos[i * 3] = Math.cos(a) * r; fPos[i * 3 + 1] = curWY - 0.15 + f * (lastH + 0.9); fPos[i * 3 + 2] = Math.sin(a) * r;
+    const m = Math.pow(f, 1.5);
+    fCol[i * 3] = 1 - 0.04 * m; fCol[i * 3 + 1] = 0.6 + 0.32 * m; fCol[i * 3 + 2] = 0.15 + 0.69 * m;
+  }
+  fGeo.attributes.position.needsUpdate = true; fGeo.attributes.color.needsUpdate = true;
+  if (t > 3.5) { fireT0 = -1; fire.visible = false; }
+}
+
+const ARTS = ['None', 'Flowers', 'Leaves', 'Fish', 'Birds', 'Dots', 'Stripes'];
+ARTS.forEach(a => {
+  const b = document.createElement('button');
+  b.className = 'chip'; b.textContent = a;
+  b.onclick = () => { state.art = a.toLowerCase(); update(); };
+  el('arts').appendChild(b);
+});
+COLORS.forEach(([name, hex]) => {
+  const b = document.createElement('button');
+  b.className = 'sw'; b.style.background = hex; b.title = name; b.setAttribute('aria-label', name);
+  b.onclick = () => { state.artColor = hex; update(); };
+  el('artcolors').appendChild(b);
+});
+['matte', 'satin', 'glazed'].forEach(f => {
+  const b = document.createElement('button');
+  b.className = 'chip'; b.textContent = f[0].toUpperCase() + f.slice(1);
+  b.onclick = () => { state.finish = f; update(); };
+  el('finish').appendChild(b);
+});
+el('as').oninput = e => { state.artSize = parseFloat(e.target.value); update(); };
+function tab(n) {
+  el('p1').style.display = n === 1 ? 'flex' : 'none'; el('p2').style.display = n === 2 ? 'flex' : 'none';
+  el('tab1').classList.toggle('on', n === 1); el('tab2').classList.toggle('on', n === 2);
+}
+el('tab1').onclick = () => tab(1); el('tab2').onclick = () => tab(2);
+function renderHandles() {
+  el('hwrap').style.display = HCAP[state.shape] ? 'flex' : 'none';
+  el('hsh').style.display = el('hstyle').style.display = state.hn > 0 ? '' : 'none';
+  const mk = (id, names, cur, set) => {
+    const w = el(id); w.innerHTML = '';
+    names.forEach((n, i) => { const b = document.createElement('button'); b.className = 'chip' + (i === cur ? ' on' : ''); b.textContent = n; b.onclick = () => { set(i); update(); }; w.appendChild(b); });
+  };
+  mk('hcount', HCN, state.hn, i => { state.hn = i; });
+  mk('hstyle', HST, state.hs, i => { state.hs = i; });
+}
+function extras() {
+  const a = [];
+  if (HCAP[state.shape]) a.push(state.hn === 0 ? 'no handles' : state.hn === 1 ? 'one ' + HST[state.hs].toLowerCase() + ' handle' : 'two ' + HST[state.hs].toLowerCase() + ' handles');
+  if (state.art !== 'none') a.push('a ' + state.art + ' design');
+  a.push('a ' + state.finish + ' finish');
+  return ' with ' + a.join(' and ');
+}
+function renderVariants() {
+  const w = el('variants'); w.innerHTML = '';
+  SHAPES[state.shape].variants.forEach((v, i) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (i === state.variant ? ' on' : ''); b.textContent = v.name;
+    b.onclick = () => { state.variant = i; update(); };
+    w.appendChild(b);
+  });
+}
+
+const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512;
+const cx = cv.getContext('2d'); let tex = null;
+function motif(kind, x, y, s, col, bg) {
+  cx.save(); cx.translate(x, y); cx.fillStyle = col;
+  const dot = (a, b, r) => { cx.beginPath(); cx.arc(a, b, r, 0, 6.2832); cx.fill(); };
+  const tri = (a, b, c, d, e, f) => { cx.beginPath(); cx.moveTo(a, b); cx.lineTo(c, d); cx.lineTo(e, f); cx.fill(); };
+  if (kind === 'flowers') { for (let a = 0; a < 5; a++) dot(Math.cos(a * 1.2566) * s * 0.55, Math.sin(a * 1.2566) * s * 0.55, s * 0.38); cx.fillStyle = bg; dot(0, 0, s * 0.25); }
+  else if (kind === 'leaves') { cx.translate(0, s * 0.5); for (const r of [-0.6, 0.6]) { cx.save(); cx.rotate(r); cx.beginPath(); cx.ellipse(0, -s * 0.6, s * 0.28, s * 0.62, 0, 0, 6.2832); cx.fill(); cx.restore(); } }
+  else if (kind === 'fish') { cx.translate(-s * 0.2, 0); cx.beginPath(); cx.ellipse(0, 0, s * 0.8, s * 0.45, 0, 0, 6.2832); cx.fill(); tri(s * 0.7, 0, s * 1.2, -s * 0.4, s * 1.2, s * 0.4); cx.fillStyle = bg; dot(-s * 0.45, -s * 0.1, s * 0.08); }
+  else if (kind === 'birds') { cx.translate(s * 0.15, 0); cx.beginPath(); cx.ellipse(0, 0, s * 0.6, s * 0.38, -0.3, 0, 6.2832); cx.fill(); dot(-s * 0.55, -s * 0.3, s * 0.24); tri(-s * 0.75, -s * 0.32, -s * 1.0, -s * 0.25, -s * 0.75, -s * 0.2); tri(s * 0.5, s * 0.05, s * 1.0, -s * 0.1, s * 0.9, s * 0.3); cx.fillStyle = bg; dot(-s * 0.6, -s * 0.34, s * 0.05); }
+  else if (kind === 'dots') dot(0, 0, s * 0.35);
+  cx.restore();
+}
+const FINISH = {matte: [0.85, 0, 0.5], satin: [0.6, 0.15, 0.3], glazed: [0.3, 1, 0.12]};
+function applyFinish() {
+  const f = FINISH[state.finish] || FINISH.glazed;
+  [mat, hMat].forEach(m => { m.roughness = f[0]; m.clearcoat = f[1]; m.clearcoatRoughness = f[2]; m.envMapIntensity = state.finish === 'matte' ? 0.3 : 0.7; m.needsUpdate = true; });
+}
+function applyArt() {
+  if (state.art === 'none') { mat.map = null; mat.color.set(state.color); mat.needsUpdate = true; return; }
+  cx.fillStyle = state.color; cx.fillRect(0, 0, 1024, 512);
+  if (state.art === 'stripes') {
+    const bands = Math.round(5 / state.artSize), bh = 512 / (bands * 2);
+    cx.fillStyle = state.artColor;
+    for (let k = 0; k < bands; k++) cx.fillRect(0, (k * 2 + 0.5) * bh, 1024, bh);
+  } else {
+    const baseRows = SHAPES[state.shape].variants[state.variant].h > 0.7 ? 2 : 1;
+    const cols = Math.round(6 / state.artSize), rows = Math.max(1, Math.round(baseRows / state.artSize));
+    const cw = 1024 / cols, ch = 512 / rows, size = Math.min(cw, ch) * 0.36;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) motif(state.art, (c + 0.5 + (r % 2) * 0.5) * cw, (r + 0.5) * ch, size, state.artColor, state.color);
+  }
+  if (!tex) { tex = new THREE.CanvasTexture(cv); tex.anisotropy = 4; tex.wrapS = THREE.RepeatWrapping; }
+  tex.needsUpdate = true; mat.map = tex; mat.color.set(0xffffff); mat.needsUpdate = true;
+}
+
+const N = 96;
+function profile(f, hm, wm) {
+  const i = Math.min(Math.floor(f), SHAPES.length - 2), k = Math.min(Math.max(f - i, 0), 1);
+  const A = SHAPES[i].variants[i === state.shape ? state.variant : 0], B = SHAPES[i + 1].variants[i + 1 === state.shape ? state.variant : 0];
+  const H = (A.h * (1 - k) + B.h * k) * hm;
+  const pts = [new THREE.Vector2(0, 0)];
+  let maxR = 0;
+  for (let j = 0; j <= N; j++) {
+    const t = j / N, r = (A.r(t) * (1 - k) + B.r(t) * k) * wm * (1 + (state.om - 1) * sstp(0.55, 1, t));
+    maxR = Math.max(maxR, r);
+    pts.push(new THREE.Vector2(r, t * H));
+  }
+  return {pts, H, maxR, i, k};
+}
+function acc(m, w) { m.visible = w > 0.03; m.scale.setScalar(Math.max(w, 0.001)); }
+
+function rebuild(f) {
+  const p = profile(f, state.hm, state.wm);
+  body.geometry.dispose();
+  body.geometry = new THREE.LatheGeometry(p.pts, 64);
+  lastH = p.H; const WY = (1.3 - p.H) / 2; curWY = WY;
+  body.position.y = WY + 0.005; wHead.position.y = WY - 0.05; wRim.position.y = WY; wStem.position.y = WY - 0.6; wBase.position.y = WY - 1.2; shadow.position.y = WY - 1.29;
+  const w = new Array(SHAPES.length).fill(0);
+  w[p.i] = 1 - p.k; w[p.i + 1] = p.k;
+  body.scale.x = 1;
+  lastExt = Math.max(2 * p.maxR, p.H);
+  let wa = 0, wb = 0, wcap = 0, hy = 0, sz = 0;
+  for (let t = 0; t < SHAPES.length; t++) {
+    if (!w[t] || !HCAP[t]) continue;
+    const c = t === state.shape ? state.hn : HDEF[t];
+    if (c >= 1) wa += w[t]; if (c >= 2) wb += w[t];
+    wcap += w[t]; hy += w[t] * HY[t]; sz += w[t] * HSIZE[t];
+  }
+  if (wcap > 0) { hy /= wcap; sz /= wcap; }
+  const sty = HCAP[state.shape] && w[state.shape] >= 0.5 ? state.hs : 0;
+  setHandleStyle(sty);
+  const hx = p.maxR + HOFF[sty] * sz, hyy = WY + p.H * hy;
+  handleA.position.set(hx, hyy, 0); handleB.position.set(-hx, hyy, 0);
+  handleA.visible = wa > 0.03; handleB.visible = wb > 0.03;
+  handleA.scale.setScalar(Math.max(sz * wa, 0.001)); handleB.scale.setScalar(Math.max(sz * wb, 0.001));
+}
+
+let fCur = state.shape, dirty = true;
+function update() {
+  hMat.color.set(state.color); applyArt(); applyFinish();
+  el('hm').value = state.hm; el('wm').value = state.wm; el('om').value = state.om;
+  const p = profile(state.shape, state.hm, state.wm);
+  el('size').textContent = state.colorName + ' ' + SHAPES[state.shape].variants[state.variant].name.toLowerCase() + ' ' + SHAPES[state.shape].name.toLowerCase() + extras() + ', about ' + Math.round(p.H * 15) + ' cm tall and ' + Math.round(p.maxR * 30) + ' cm wide';
+  [...el('swatches').children].forEach((b, i) => b.classList.toggle('on', COLORS[i][1] === state.color));
+  [...el('shapes').children].forEach((b, i) => b.classList.toggle('on', i === state.shape));
+  renderVariants(); renderHandles(); el('as').value = state.artSize;
+  const price = priceOf(state.shape, state.variant, state.hm, state.wm, state.hn, state.art);
+  el('price').textContent = rupee(price); el('price2').textContent = rupee(price); el('sum2').textContent = el('size').textContent;
+  [...el('arts').children].forEach((b, i) => b.classList.toggle('on', ARTS[i].toLowerCase() === state.art));
+  [...el('artcolors').children].forEach((b, i) => b.classList.toggle('on', COLORS[i][1] === state.artColor));
+  [...el('finish').children].forEach((b, i) => b.classList.toggle('on', ['matte', 'satin', 'glazed'][i] === state.finish));
+  dirty = true;
+}
+['hm', 'wm', 'om'].forEach(k => el(k).oninput = e => { state[k] = parseFloat(e.target.value); update(); });
+
+el('save').onclick = () => {
+  if (fireT0 >= 0 || el('saveFx')) return;
+  let ok = true;
+  try { localStorage.setItem('mittiDesign2', JSON.stringify(state)); } catch (e) { ok = false; }
+  fireT0 = performance.now();
+  setTimeout(() => {
+    const fx = document.createElement('div'); fx.id = 'saveFx';
+    fx.innerHTML = KILN + '<div class="fx">INTO THE KILN...</div>';
+    fx.querySelector('#ipot path').setAttribute('fill', state.color);
+    document.body.appendChild(fx);
+    const txt = fx.querySelector('.fx');
+    setTimeout(() => { txt.textContent = 'FIRING...'; }, 2100);
+    setTimeout(() => { txt.textContent = ok ? 'SAVED' : 'COULD NOT SAVE IN THIS BROWSER'; }, 3600);
+    setTimeout(() => { fx.style.transition = 'opacity .5s'; fx.style.opacity = 0; }, 4400);
+    setTimeout(() => { fx.remove(); el('msg').textContent = ok ? 'Design saved. It will be here next time you visit.' : 'Could not save in this browser.'; }, 4900);
+  }, 2600);
+};
+el('addBtn').onclick = addToCart; el('add2').onclick = addToCart;
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize(); update();
+
+const KILN = el('kiln').outerHTML;
+let introDone = false, introT0 = 0;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+document.documentElement.style.overflow = 'hidden'; scrollTo(0, 0);
+function finish() {
+  if (introDone) return;
+  introDone = true; introT0 = performance.now();
+  el('intro').classList.add('done');
+  document.documentElement.style.overflow = '';
+  setTimeout(() => el('intro').remove(), 900);
+  setTimeout(() => toast('Drag sideways to turn the piece'), 1800);
+}
+setTimeout(finish, reduceMotion ? 600 : 4700);
+el('skip').onclick = finish;
+
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let hover = false, hoverK = 0;
+addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' || rotMode || !introDone) return;
+  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  hover = ray.intersectObjects([body, handleA, handleB], false).some(h => h.object.visible);
+  document.body.style.cursor = hover ? 'pointer' : '';
+});
+
+const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+let rotMode = false, yawOff = 0, pitch = 0, zoom = 6.5, lastD = 0;
+const ptrs = new Map(), drag = el('drag');
+el('rot').onclick = () => {
+  rotMode = !rotMode; hover = false; document.body.style.cursor = '';
+  drag.style.display = rotMode ? 'block' : 'none';
+  el('tip').style.display = rotMode ? 'block' : 'none';
+  el('rot').textContent = rotMode ? 'Done' : 'Rotate';
+};
+drag.onpointerdown = e => { drag.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY}); };
+drag.onpointermove = e => {
+  const p = ptrs.get(e.pointerId); if (!p) return;
+  if (ptrs.size === 1) { yawOff += (e.clientX - p.x) * 0.01; pitch = clamp(pitch + (e.clientY - p.y) * 0.008, -0.6, 1.4); }
+  p.x = e.clientX; p.y = e.clientY;
+  if (ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (lastD) zoom = clamp(zoom - (d - lastD) * 0.02, 3.5, 9);
+    lastD = d;
+  }
+};
+drag.onpointerup = drag.onpointercancel = e => { ptrs.delete(e.pointerId); lastD = 0; };
+drag.addEventListener('wheel', e => { e.preventDefault(); zoom = clamp(zoom + e.deltaY * 0.005, 3.5, 9); }, {passive: false});
+
+let dragging = false, dragId = null, lx = 0, ly = 0, yawVel = 0;
+addEventListener('pointerdown', e => {
+  if (rotMode || !introDone || (e.target.closest && e.target.closest('input,button,#drawer,#menu,#bar,#scrim'))) return;
+  dragging = true; dragId = e.pointerId; lx = e.clientX; ly = e.clientY; yawVel = 0;
+});
+addEventListener('pointermove', e => {
+  if (!dragging || e.pointerId !== dragId) return;
+  const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
+  if (Math.abs(dx) > Math.abs(dy)) { yawOff += dx * 0.012; yawVel = dx * 0.012; }
+});
+['pointerup', 'pointercancel'].forEach(t => addEventListener(t, e => { if (e.pointerId === dragId) dragging = false; }));
+addEventListener('wheel', e => { if (!rotMode && Math.abs(e.deltaX) > Math.abs(e.deltaY)) { e.preventDefault(); yawOff += e.deltaX * 0.008; } }, {passive: false});
+addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input')) return;
+  if (e.key === 'ArrowLeft') yawOff -= 0.25;
+  if (e.key === 'ArrowRight') yawOff += 0.25;
+});
+
+const ss = (a, b, x) => { const t = Math.min(Math.max((x - a) / (b - a), 0), 1); return t * t * (3 - 2 * t); };
+const lastSection = SHAPES.length; // the design section index
+let time = 0, lastF = -1, curBase = 1.35, wasDocked = false;
+const dc = document.querySelector('#design .card');
+function frame() {
+  hoverK += ((hover ? 1 : 0) - hoverK) * 0.1;
+  if (!rotMode) time += 0.01 + 0.05 * hoverK;
+  const sc = scrollY / innerHeight, idx = Math.round(sc);
+  let target;
+  if (idx >= lastSection) target = state.shape;
+  else { const c = Math.min(sc, SHAPES.length - 1), fl = Math.floor(c); target = Math.min(SHAPES.length - 1, fl + ss(0.15, 0.85, c - fl)); }
+  fCur += (target - fCur) * 0.12;
+  if (dirty || Math.abs(fCur - lastF) > 0.001) { rebuild(fCur); lastF = fCur; dirty = false; el('label').textContent = SHAPES[Math.round(fCur)].name; }
+  const max = document.documentElement.scrollHeight - innerHeight, p = max > 0 ? scrollY / max : 0;
+  const mobile = innerWidth < 700 || innerWidth / innerHeight < 0.8;
+  const zfac = idx >= lastSection ? Math.min(1, Math.max(0.7, lastExt / 2.2)) : 1;
+  const docked = sc >= lastSection - 0.3 && sc < lastSection + 0.7;
+  if (docked !== wasDocked) { wasDocked = docked; dc.classList.toggle('dock', docked); document.body.classList.toggle('dock', docked); }
+  const fitW = 0.85 * 4.73 * (innerWidth / innerHeight) / 2.8, txm = Math.min(1.7, 0.95 * (innerWidth / innerHeight));
+  const tx = (mobile || idx >= lastSection) ? 0 : (idx % 2 === 0 ? txm : -txm), ty = idx >= lastSection ? zfac * 1.0 - curBase * (curWY + lastH / 2) : (mobile ? 0.35 : 0);
+  group.position.x += (tx - group.position.x) * 0.06;
+  group.position.y += (ty - group.position.y) * 0.06;
+  if (!dragging && !rotMode) { yawOff += yawVel; yawVel *= 0.93; }
+  el('prog').style.width = (p * 100) + '%';
+  group.rotation.y = p * Math.PI * 4 + time + yawOff + ndc.x * 0.3 * hoverK;
+  group.rotation.x += ((rotMode ? pitch : -ndc.y * 0.3 * hoverK) - group.rotation.x) * 0.15;
+  camera.position.z += ((rotMode ? zoom : 6.5 * zfac) - camera.position.z) * 0.1;
+  camera.position.y += ((idx >= lastSection ? 2.4 : 1.4) - camera.position.y) * 0.06;
+  camera.lookAt(0, 0, 0);
+  const introK = introDone ? 1 - Math.pow(1 - Math.min(1, (performance.now() - introT0) / 1200), 3) : 0;
+  curBase += (Math.min(idx >= lastSection ? (mobile ? 0.78 : 1.05) : (mobile ? 0.7 : 1.35), fitW) - curBase) * 0.08;
+  group.scale.setScalar(curBase * (0.3 + 0.7 * introK) * (1 + 0.05 * hoverK) * Math.min(1, 4.0 / ((lastH + 1.3) * curBase)));
+  group.visible = introDone;
+  stepFire(performance.now());
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+let cart = [];
+try { cart = JSON.parse(localStorage.getItem('mittiCart')) || []; } catch (e) { cart = []; }
+function saveCart() { try { localStorage.setItem('mittiCart', JSON.stringify(cart)); } catch (e) {} }
+function toast(msg) { const t = el('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 1800); }
+function renderCart() {
+  const list = el('cartList'); list.innerHTML = '';
+  cart.forEach((it, i) => {
+    const row = document.createElement('div'); row.className = 'ci';
+    row.innerHTML = '<div class="cit"></div><div class="cip">' + rupee(it.price) + '</div>';
+    row.firstChild.textContent = it.text;
+    const x = document.createElement('button'); x.className = 'cix'; x.textContent = '\u00D7'; x.setAttribute('aria-label', 'Remove');
+    x.onclick = () => { cart.splice(i, 1); saveCart(); renderCart(); };
+    row.appendChild(x); list.appendChild(row);
+  });
+  el('cartEmpty').style.display = cart.length ? 'none' : 'block';
+  el('cartFoot').style.display = cart.length ? 'flex' : 'none';
+  el('cartTotal').textContent = rupee(cart.reduce((a, b) => a + b.price, 0));
+  const c = el('cartCount'); c.textContent = cart.length; c.style.display = cart.length ? 'flex' : 'none';
+}
+function addToCart() {
+  cart.push({text: el('size').textContent, price: priceOf(state.shape, state.variant, state.hm, state.wm, state.hn, state.art)});
+  saveCart(); renderCart(); toast('Added to your cart');
+}
+const openCart = () => { el('drawer').classList.add('open'); el('scrim').classList.add('on'); closeMenu(); };
+const closeCart = () => { el('drawer').classList.remove('open'); el('scrim').classList.remove('on'); };
+const closeMenu = () => el('menu').classList.remove('open');
+el('cartBtn').onclick = openCart; el('cartClose').onclick = closeCart; el('scrim').onclick = closeCart;
+el('menuBtn').onclick = () => el('menu').classList.toggle('open');
+document.addEventListener('click', e => { if (!el('menu').contains(e.target) && !el('menuBtn').contains(e.target)) closeMenu(); });
+addEventListener('keydown', e => { if (e.key === 'Escape') { closeMenu(); closeCart(); } });
+const go = id => { closeMenu(); el(id).scrollIntoView({behavior: 'smooth'}); };
+el('mHome').onclick = () => { closeMenu(); scrollTo({top: 0, behavior: 'smooth'}); };
+el('mCollection').onclick = () => go('collection'); el('mDesign').onclick = () => go('design'); el('mOrder').onclick = () => go('order');
+el('goDesign').onclick = () => go('design'); el('goBrowse').onclick = () => go('collection');
+el('checkout').onclick = () => {
+  const lines = cart.map((it, i) => (i + 1) + '. ' + it.text + ' - ' + rupee(it.price));
+  const text = 'Hello Mitti Studio! I would like to order:\n' + lines.join('\n') + '\nTotal: ' + el('cartTotal').textContent;
+  el('ckmsg').textContent = text;
+  window.open('https://wa.me/' + PHONE + '?text=' + encodeURIComponent(text), '_blank');
+};
+renderCart();
+
+const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }), {threshold: 0.2}) : null;
+document.querySelectorAll('.card').forEach(c => { if (c.closest('#design') || c.closest('#order')) return; io ? io.observe(c) : c.classList.add('in'); });
+[...document.querySelectorAll('#order .card > *')].forEach((c, i) => c.style.setProperty('--i', i));
+function countUp(node) {
+  const to = priceOf(state.shape, state.variant, state.hm, state.wm, state.hn, state.art), t0 = performance.now();
+  (function tick(now) {
+    const k = Math.min(1, (now - t0) / 900), e = 1 - Math.pow(1 - k, 3);
+    node.textContent = rupee(k < 1 ? Math.round(to * e) : to);
+    if (k < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+const oc = document.querySelector('#order .card');
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(es => es.forEach(e => {
+    oc.classList.toggle('in', e.isIntersecting);
+    if (e.isIntersecting) setTimeout(() => countUp(el('price2')), 550);
+  }), {threshold: 0.3}).observe(oc);
+} else oc.classList.add('in');
+frame();
+</script>
+</body>
+</html>
