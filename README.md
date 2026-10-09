@@ -21,10 +21,3 @@ A single-page 3D pottery shop built with Three.js, HTML, CSS and JavaScript. Cus
 
 Open `index.html` in a browser. It loads Three.js and fonts from a CDN, so it needs an internet connection.
 
-## Next steps
-
-- Django backend to store designs and orders
-- Payments
-- Photos of finished pieces
-
-Live demo: add your link here.
